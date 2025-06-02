@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tetris Comunicai</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        /* =====  Variables de la paleta de Comunicai ===== */
+        :root {
+            --color-primario:  #00A8A8;
+            --color-secundario:#003366;
+            --color-acento:    #FF9500;
+            --color-fondo:     #F5F5F5;
+            --color-texto:     #222222;
+            --color-blanco:    #FFFFFF;
+            --color-gris-claro:#E0E0E0;
+            --color-gris-osc:  #CCCCCC;
+        }
+
+        /* ================= Estilos Generales ================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Baloo 2', cursive;
+            background-color: var(--color-fondo);
+            color: var(--color-texto);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 10px;
+        }
+        h1 {
+            font-family: 'Baloo 2', cursive;
+            font-weight: 700;
+            color: var(--color-secundario);
+            margin: 10px 0 0;
+            font-size: 3em;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        /* ================= Logo de la Empresa ================= */
+        #companyLogo {
+            display: block;
+            margin: 10px auto 20px;
+            max-width: 100%;
+            max-height: 80px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 0;
+        }
+
+        /* =========== Menú de Información del Jugador =========== */
+        #playerInfoMenu {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            background-color: var(--color-primario);
+            border-radius: 20px;
+            box-shadow: 0 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #playerInfoMenu h2 {
+            font-size: 1.6em;
+            color: var(--color-blanco);
+            margin-bottom: 15px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 700;
+            color: var(--color-blanco);
+            margin-bottom: 5px;
+            text-align: left;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 2px solid var(--color-gris-osc);
+            font-size: 1em;
+        }
+        #continueToLevelSelectButton {
+            background-color: var(--color-acento);
+            color: var(--color-blanco);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 700;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 4px var(--color-gris-osc);
+            margin-top: 10px;
+        }
+        #continueToLevelSelectButton:hover {
+            background-color: #e68500;
+        }
+        #continueToLevelSelectButton:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px var(--color-gris-osc);
+        }
+
+        /* ===== Menú de Selección de Nivel ===== */
+        #levelSelectionMenu {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            background-color: var(--color-blanco);
+            border-radius: 20px;
+            box-shadow: 0 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        #levelSelectionMenu h2 {
+            font-size: 1.8em;
+            color: var(--color-secundario);
+            margin-bottom: 20px;
+        }
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            width: 100%;
+            justify-items: center;
+        }
+        .level-item-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .level-card {
+            background-color: var(--color-fondo);
+            padding: 5px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px rgba(0, 0, 0, 0.1);
+            border: 3px solid transparent;
+            width: 120px;
+            height: 120px;
+        }
+        .level-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px rgba(0, 0, 0, 0.15);
+            border-color: var(--color-acento);
+        }
+        .level-card-animal-image {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .level-number-display {
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--color-primario);
+            text-align: center;
+        }
+
+        /* =========== Contenedor del Juego =========== */
+        .game-container {
+            display: none;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 15px;
+            background-color: var(--color-blanco);
+            border-radius: 20px;
+            box-shadow: 0 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        #gameCanvas {
+            border: 4px solid var(--color-secundario);
+            border-radius: 8px;
+            background-color: var(--color-fondo);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.15);
+        }
+        #nextPieceCanvas {
+            border: 2px solid var(--color-secundario);
+            border-radius: 6px;
+            background-color: var(--color-fondo);
+            display: block;
+            margin: 5px auto 0;
+        }
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px;
+            background-color: var(--color-primario);
+            border-radius: 15px;
+            min-width: 180px;
+            text-align: left;
+            box-shadow: 0 6px rgba(0,0,0,0.1);
+            color: var(--color-blanco);
+        }
+        .info-panel h2 {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--color-blanco);
+            text-align: center;
+            background-color: var(--color-secundario);
+            padding: 6px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+        .info-panel p {
+            margin: 4px 0;
+            font-size: 1.1em;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+        }
+        .info-panel p span {
+            color: var(--color-acento);
+            background-color: var(--color-blanco);
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 0.85em;
+        }
+        #animalDisplayContainer {
+            text-align: center;
+            margin-top: 8px;
+            border-radius: 10px;
+        }
+        #animalImageElement {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            background-color: var(--color-blanco);
+            border-radius: 50%;
+            display: block;
+            margin: 0 auto 5px;
+            border: 3px solid var(--color-acento);
+            box-shadow: 0 0 8px rgba(0,0,0,0.1);
+        }
+        .level-text-info-panel {
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--color-blanco);
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 8px;
+        }
+
+        /* =========== Botones de Control =========== */
+        .controls {
+            display: none;
+            margin-top: 10px;
+            text-align: center;
+        }
+        button {
+            font-family: 'Baloo 2', cursive;
+            font-weight: 700;
+            background-color: var(--color-acento);
+            color: var(--color-blanco);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 4px var(--color-gris-osc);
+            margin: 5px;
+            letter-spacing: 0.5px;
+        }
+        button:hover {
+            background-color: #e68500;
+        }
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px var(--color-gris-osc);
+        }
+        #pauseButton {
+            background-color: var(--color-secundario);
+            box-shadow: 0 4px var(--color-gris-osc);
+        }
+        #pauseButton:hover { background-color: #00264d; }
+        #pauseButton:active { box-shadow: 0 2px var(--color-gris-osc); transform: translateY(2px); }
+        #soundButton {
+            background-color: var(--color-secundario);
+            box-shadow: 0 4px var(--color-gris-osc);
+        }
+        #soundButton:hover { background-color: #00264d; }
+        #soundButton:active { box-shadow: 0 2px var(--color-gris-osc); transform: translateY(2px); }
+
+        /* =========== Mensajes =========== */
+        .messages {
+            display: none;
+            margin-top: 10px;
+            text-align: center;
+        }
+        #messageArea {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--color-acento);
+            min-height: 25px;
+            margin-top: 8px;
+        }
+
+        /* =========== Responsive =========== */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            h1 { font-size: 2.5em; }
+            #playerInfoMenu { max-width: 90%; }
+            #playerInfoMenu h2 { font-size: 1.4em; }
+            .input-group input { font-size: 0.9em; }
+
+            #levelSelectionMenu { max-width: 95%; }
+            #levelSelectionMenu h2 { font-size: 1.5em; }
+            .level-card { width: 100px; height: 100px; }
+            .level-card-animal-image { width: 90px; height: 90px; }
+            .level-number-display { font-size: 0.9em; }
+
+            .game-container { flex-direction: column; align-items: center; }
+            #gameCanvas { max-width: 100%; height: auto; }
+            .info-panel { min-width: 90%; }
+            .info-panel h2 { font-size: 1.1em; }
+            .info-panel p { font-size: 1em; }
+            #animalImageElement { width: 50px; height: 50px; }
+            .level-text-info-panel { font-size: 0.9em; }
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 2em; }
+            #companyLogo { max-width: 120px; max-height: 50px; margin-bottom: 10px; }
+            #playerInfoMenu { padding: 10px; }
+            #playerInfoMenu h2 { font-size: 1.2em; }
+
+            #levelSelectionMenu h2 { font-size: 1.2em; }
+            .level-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .level-card { width: 80px; height: 80px; }
+            .level-card-animal-image { width: 70px; height: 70px; }
+            .level-number-display { font-size: 0.8em; }
+
+            .info-panel h2 { font-size: 1em; }
+            .info-panel p { font-size: 0.9em; }
+            #animalImageElement { width: 45px; height: 45px; }
+            .level-text-info-panel { font-size: 0.8em; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ================= Título y Logo ================= -->
+    <h1>TETRIS</h1>
+    <img id="companyLogo" src="Logo_Comunicai.png" alt="Logo Comunicai">
+
+    <!-- =========== 1) MENÚ DE NOMBRE + EDAD =========== -->
+    <div id="playerInfoMenu">
+        <h2>Información del Jugador</h2>
+        <div class="input-group">
+            <label for="playerNameInput">Nombre:</label>
+            <input type="text" id="playerNameInput" placeholder="Escribe tu nombre">
+        </div>
+        <div class="input-group">
+            <label for="playerAgeInput">Edad:</label>
+            <input type="number" id="playerAgeInput" placeholder="Escribe tu edad">
+        </div>
+        <button id="continueToLevelSelectButton">Continuar</button>
+    </div>
+
+    <!-- =========== 2) MENÚ DE SELECCIÓN DE NIVEL =========== -->
+    <div id="levelSelectionMenu">
+        <h2>Elige un Nivel</h2>
+        <div class="level-grid" id="levelGridContainer">
+            <!-- Las 12 tarjetas se generan dinámicamente con JavaScript -->
+        </div>
+    </div>
+
+    <!-- =========== 3) CONTENEDOR DEL JUEGO =========== -->
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="info-panel">
+            <h2>Info del Juego</h2>
+            <p>Puntuación: <span id="score">0</span></p>
+            <p>Nivel: <span id="level">1</span></p>
+            <p>Líneas: <span id="lines">0</span></p>
+
+            <div id="animalDisplayContainer">
+                <img id="animalImageElement" src="imagenes/nivel1_boceto.png" alt="Estilo Nivel 1">
+            </div>
+            <p id="levelTextUnderAnimal" class="level-text-info-panel">Nivel 1</p>
+
+            <h2>Próxima Pieza</h2>
+            <canvas id="nextPieceCanvas"></canvas>
+        </div>
+    </div>
+
+    <!-- =========== 4) BOTONES DE CONTROL =========== -->
+    <div class="controls">
+        <button id="mainActionButton">Volver al Menú</button>
+        <button id="pauseButton">Pausar</button>
+        <button id="soundButton">Sonido On</button>
+    </div>
+
+    <!-- =========== 5) ÁREA DE MENSAJES =========== -->
+    <div class="messages">
+        <p id="messageArea">Ingresa tus datos para comenzar</p>
+    </div>
+
+    <!-- =========== 6) CÓDIGO JAVASCRIPT =========== -->
+    <script>
+        // — 6.1) Referencias a los elementos del DOM —
+        const playerInfoMenu              = document.getElementById('playerInfoMenu');
+        const playerNameInput             = document.getElementById('playerNameInput');
+        const playerAgeInput              = document.getElementById('playerAgeInput');
+        const continueToLevelSelectButton = document.getElementById('continueToLevelSelectButton');
+
+        const levelSelectionMenu          = document.getElementById('levelSelectionMenu');
+        const levelGridContainer          = document.getElementById('levelGridContainer');
+
+        const gameContainer               = document.querySelector('.game-container');
+        const controlsDiv                 = document.querySelector('.controls');
+        const messagesDiv                 = document.querySelector('.messages');
+        const messageArea                 = document.getElementById('messageArea');
+
+        const mainActionButton            = document.getElementById('mainActionButton');
+        const pauseButton                 = document.getElementById('pauseButton');
+        const soundButton                 = document.getElementById('soundButton');
+
+        const animalImageElement          = document.getElementById('animalImageElement');
+        const levelTextUnderAnimal        = document.getElementById('levelTextUnderAnimal');
+
+        const scoreDisplay                = document.getElementById('score');
+        const levelDisplay                = document.getElementById('level');
+        const linesDisplay                = document.getElementById('lines');
+
+        const canvas                      = document.getElementById('gameCanvas');
+        const context                     = canvas.getContext('2d');
+        const nextPieceCanvas             = document.getElementById('nextPieceCanvas');
+        const nextPieceContext            = nextPieceCanvas.getContext('2d');
+
+        // — 6.2) Configuración inicial de tamaño de canvas —
+        const COLS = 10, ROWS = 20, BLOCK_SIZE = 24;
+        const NEXT_PIECE_COLS = 4, NEXT_PIECE_ROWS = 4, NEXT_PIECE_BLOCK_SIZE = 15;
+        canvas.width  = COLS * BLOCK_SIZE;
+        canvas.height = ROWS * BLOCK_SIZE;
+        nextPieceCanvas.width  = NEXT_PIECE_COLS * NEXT_PIECE_BLOCK_SIZE;
+        nextPieceCanvas.height = NEXT_PIECE_ROWS * NEXT_PIECE_BLOCK_SIZE;
+        context.scale(BLOCK_SIZE, BLOCK_SIZE);
+        nextPieceContext.scale(NEXT_PIECE_BLOCK_SIZE, NEXT_PIECE_BLOCK_SIZE);
+
+        // — 6.3) Sonidos con Tone.js (si está disponible) —
+        let moveSound, rotateSound, landSound, lineClearSound, levelUpSound, gameOverSound;
+        let soundEnabled = true;
+        function setupSounds() {
+            if (typeof Tone !== 'undefined') {
+                moveSound = new Tone.Synth({
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
+                }).toDestination();
+                rotateSound = new Tone.Synth({
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.005, decay: 0.05, sustain: 0, release: 0.1 }
+                }).toDestination();
+                landSound = new Tone.Synth({
+                    oscillator: { type: 'square' },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.1 },
+                    volume: -10
+                }).toDestination();
+                lineClearSound = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'sawtooth' },
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 },
+                    volume: -5
+                }).toDestination();
+                levelUpSound = new Tone.PolySynth(Tone.Synth, {
+                    envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.4 },
+                    volume: -3
+                }).toDestination();
+                gameOverSound = new Tone.Synth({
+                    oscillator: { type: 'fatsawtooth' },
+                    envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.5 },
+                    volume: -5
+                }).toDestination();
+            }
+        }
+        setupSounds();
+        function playSound(sound, note, duration='8n', time=Tone.now()) {
+            if (soundEnabled && sound && typeof sound.triggerAttackRelease === 'function') {
+                sound.triggerAttackRelease(note, duration, time);
+            }
+        }
+        function playPolySound(sound, notes, duration='8n', time=Tone.now()) {
+            if (soundEnabled && sound && typeof sound.triggerAttackRelease === 'function') {
+                sound.triggerAttackRelease(notes, duration, time);
+            }
+        }
+
+        // — 6.4) Tetrominós y arreglo de niveles (12 iconos) —
+        const TETROMINOES = {
+            'I': { shape: [[1,1,1,1]], color: '#54C6EB' },
+            'L': { shape: [[0,0,1],[1,1,1]], color: '#FFA500' },
+            'J': { shape: [[1,0,0],[1,1,1]], color: '#4169E1' },
+            'T': { shape: [[0,1,0],[1,1,1]], color: '#BB86FC' },
+            'O': { shape: [[1,1],[1,1]], color: '#FFDA63' },
+            'S': { shape: [[0,1,1],[1,1,0]], color: '#90EE90' },
+            'Z': { shape: [[1,1,0],[0,1,1]], color: '#FF7F50' }
+        };
+        const PIECE_KEYS = Object.keys(TETROMINOES);
+
+        const LEVEL_ICONS = [
+          { name: "Nivel 1: Boceto a lápiz",       imageName: "imagenes/nivel1_boceto.png" },
+          { name: "Nivel 2: Arte lineal",          imageName: "imagenes/nivel2_artelineal.png" },
+          { name: "Nivel 3: Claroscuro básico",    imageName: "imagenes/nivel3_claroscuro.png" },
+          { name: "Nivel 4: Punteado (stippling)",  imageName: "imagenes/nivel4_stippling.png" },
+          { name: "Nivel 5: Rotulador fino",       imageName: "imagenes/nivel5_rotulador.png" },
+          { name: "Nivel 6: Trazo a lápiz sencillo", imageName: "imagenes/nivel6_lapiz.png" },
+          { name: "Nivel 7: Color plano",          imageName: "imagenes/nivel7_colorplano.png" },
+          { name: "Nivel 8: Crayones",             imageName: "imagenes/nivel8_crayones.png" },
+          { name: "Nivel 9: Acuarela digital",     imageName: "imagenes/nivel9_acuarela.png" },
+          { name: "Nivel 10: Óleo",                imageName: "imagenes/nivel10_oleo.png" },
+          { name: "Nivel 11: Realista",            imageName: "imagenes/nivel11_realista.png" },
+          { name: "Nivel 12: Cinemático",          imageName: "imagenes/nivel12_cine.png" }
+        ];
+
+        // — 6.5) Variables de estado del juego —
+        let board = createBoard(COLS, ROWS);
+        let currentPiece, nextPiece;
+        let score = 0, level = 1, linesCleared = 0;
+        let gameOver = false, isPaused = false, gameStarted = false;
+        let dropCounter = 0, dropInterval = 1000, lastTime = 0;
+        let animationFrameId = null;
+        const pieceBag = [];
+
+        // — 6.6) Funciones para crear y dibujar el tablero —
+        function createBoard(cols, rows) {
+            const matrix = [];
+            while (rows--) {
+                matrix.push(new Array(cols).fill(0));
+            }
+            return matrix;
+        }
+
+        function drawBoard() {
+            board.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        context.fillStyle = value;
+                        context.fillRect(x, y, 1, 1);
+                        context.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+                        context.lineWidth = 0.08;
+                        context.strokeRect(x, y, 1, 1);
+                    }
+                });
+            });
+        }
+
+        function drawMatrix(matrix, offset, ctxToUse, pieceColor) {
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        ctxToUse.fillStyle = pieceColor;
+                        ctxToUse.fillRect(x + offset.x, y + offset.y, 1, 1);
+                        ctxToUse.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                        ctxToUse.lineWidth = 0.12;
+                        ctxToUse.strokeRect(x + offset.x, y + offset.y, 1, 1);
+                    }
+                });
+            });
+        }
+
+        function refillBag() {
+            const tempBag = [...PIECE_KEYS];
+            while (tempBag.length) {
+                const randomIndex = Math.floor(Math.random() * tempBag.length);
+                pieceBag.push(tempBag.splice(randomIndex, 1)[0]);
+            }
+        }
+
+        function resetPiece() {
+            if (pieceBag.length === 0) refillBag();
+            const type = pieceBag.pop();
+            const pieceDetails = TETROMINOES[type];
+            currentPiece = {
+                pos: { x: Math.floor(COLS / 2) - Math.floor(pieceDetails.shape[0].length / 2), y: 0 },
+                matrix: pieceDetails.shape,
+                color: pieceDetails.color
+            };
+            if (pieceBag.length === 0) refillBag();
+            const nextType = pieceBag[pieceBag.length - 1];
+            const nextDetails = TETROMINOES[nextType];
+            nextPiece = {
+                matrix: nextDetails.shape,
+                color: nextDetails.color
+            };
+            if (checkCollision(board, currentPiece)) {
+                gameOver = true;
+                playSound(gameOverSound, 'C3', '1n');
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+        }
+
+        function pieceDrop() {
+            if (!gameStarted || gameOver || isPaused) return;
+            currentPiece.pos.y++;
+            if (checkCollision(board, currentPiece)) {
+                currentPiece.pos.y--;
+                mergePieceToBoard();
+                playSound(landSound, 'C2', '16n');
+                clearFullLines();
+                if (!gameOver) resetPiece();
+                updateScore(0);
+            }
+            dropCounter = 0;
+        }
+
+        function pieceMove(direction) {
+            if (!gameStarted || gameOver || isPaused) return;
+            currentPiece.pos.x += direction;
+            if (checkCollision(board, currentPiece)) {
+                currentPiece.pos.x -= direction;
+            } else {
+                playSound(moveSound, 'C4', '32n');
+            }
+        }
+
+        function pieceRotate() {
+            if (!gameStarted || gameOver || isPaused) return;
+            const original = currentPiece.matrix;
+            const rotated = rotateMatrix(currentPiece.matrix);
+            currentPiece.matrix = rotated;
+            let offset = 1;
+            while (checkCollision(board, currentPiece)) {
+                currentPiece.pos.x += offset;
+                offset = -(offset + (offset > 0 ? 1 : -1));
+                if (Math.abs(offset) > currentPiece.matrix[0].length) {
+                    currentPiece.pos.x -= (offset - (offset > 0 ? -1 : 1)) / 2;
+                    currentPiece.matrix = original;
+                    return;
+                }
+            }
+            playSound(rotateSound, 'E4', '16n');
+        }
+
+        function rotateMatrix(matrix) {
+            const rows = matrix.length;
+            const cols = matrix[0].length;
+            const newMatrix = [];
+            for (let y = 0; y < cols; y++) {
+                newMatrix[y] = [];
+                for (let x = 0; x < rows; x++) {
+                    newMatrix[y][x] = matrix[rows - 1 - x][y];
+                }
+            }
+            return newMatrix;
+        }
+
+        function checkCollision(boardToCheck, pieceToCheck) {
+            for (let y = 0; y < pieceToCheck.matrix.length; y++) {
+                for (let x = 0; x < pieceToCheck.matrix[y].length; x++) {
+                    if (pieceToCheck.matrix[y][x] !== 0) {
+                        const newX = x + pieceToCheck.pos.x;
+                        const newY = y + pieceToCheck.pos.y;
+                        if (
+                            newX < 0 ||
+                            newX >= COLS ||
+                            newY >= ROWS ||
+                            (newY >= 0 && boardToCheck[newY][newX] !== 0)
+                        ) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function mergePieceToBoard() {
+            currentPiece.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        board[y + currentPiece.pos.y][x + currentPiece.pos.x] = currentPiece.color;
+                    }
+                });
+            });
+        }
+
+        function clearFullLines() {
+            let linesRemoved = 0;
+            outer: for (let y = ROWS - 1; y >= 0; y--) {
+                for (let x = 0; x < COLS; x++) {
+                    if (board[y][x] === 0) continue outer;
+                }
+                const row = board.splice(y, 1)[0].fill(0);
+                board.unshift(row);
+                y++;
+                linesRemoved++;
+                linesCleared++;
+            }
+            if (linesRemoved > 0) {
+                playPolySound(lineClearSound, ['C4', 'E4', 'G4'], '4n');
+                updateScore(linesRemoved);
+                updateLevel();
+            }
+        }
+
+        function updateScore(lines) {
+            let points = 0;
+            if (lines === 1) points = 40 * level;
+            else if (lines === 2) points = 100 * level;
+            else if (lines === 3) points = 300 * level;
+            else if (lines >= 4) points = 1200 * level;
+            score += points;
+            scoreDisplay.textContent = score;
+            linesDisplay.textContent = linesCleared;
+        }
+
+        function updateLevel() {
+            const newLevel = Math.floor(linesCleared / 10) + 1;
+            if (gameStarted && newLevel > level && level < 12) {
+                level = newLevel;
+                messageArea.textContent = `¡Nivel ${level}!`;
+                playPolySound(levelUpSound, ['C5', 'E5', 'G5', 'C6'], '2n');
+                setTimeout(() => {
+                    if (!gameOver && !isPaused) messageArea.textContent = '';
+                }, 2000);
+            }
+            if (level > 12) level = 12;
+            levelDisplay.textContent = level;
+            levelTextUnderAnimal.textContent = `Nivel ${level}`;
+            dropInterval = Math.max(1000 - ((level - 1) * 75), 150);
+            updateAnimalDisplay();
+        }
+
+        function updateAnimalDisplay() {
+            const icon = LEVEL_ICONS[Math.min(level - 1, LEVEL_ICONS.length - 1)];
+            animalImageElement.src = icon.imageName;
+            animalImageElement.alt = icon.name;
+        }
+
+        function draw() {
+            context.fillStyle = getComputedStyle(canvas).backgroundColor;
+            context.fillRect(0, 0, canvas.width / BLOCK_SIZE, canvas.height / BLOCK_SIZE);
+            drawBoard();
+            if (currentPiece) {
+                drawMatrix(currentPiece.matrix, currentPiece.pos, context, currentPiece.color);
+            }
+            nextPieceContext.fillStyle = getComputedStyle(nextPieceCanvas).backgroundColor;
+            nextPieceContext.fillRect(
+                0,
+                0,
+                nextPieceCanvas.width / NEXT_PIECE_BLOCK_SIZE,
+                nextPieceCanvas.height / NEXT_PIECE_BLOCK_SIZE
+            );
+            if (nextPiece) {
+                const offsetX = (NEXT_PIECE_COLS - nextPiece.matrix[0].length) / 2;
+                const offsetY = (NEXT_PIECE_ROWS - nextPiece.matrix.length) / 2;
+                drawMatrix(nextPiece.matrix, { x: offsetX, y: offsetY }, nextPieceContext, nextPiece.color);
+            }
+        }
+
+        function gameLoop(time = 0) {
+            if (gameOver || !gameStarted) return;
+            if (!isPaused) {
+                const deltaTime = time - lastTime;
+                lastTime = time;
+                dropCounter += deltaTime;
+                if (dropCounter > dropInterval) {
+                    pieceDrop();
+                }
+                draw();
+            }
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', event => {
+            if (!gameStarted || gameOver || isPaused) return;
+            if (["ArrowUp", "ArrowDown", " "].includes(event.key)) event.preventDefault();
+            if (["ArrowLeft", "a", "A"].includes(event.key)) pieceMove(-1);
+            else if (["ArrowRight", "d", "D"].includes(event.key)) pieceMove(1);
+            else if (["ArrowDown", "s", "S"].includes(event.key)) pieceDrop();
+            else if (["ArrowUp", "w", "W"].includes(event.key)) pieceRotate();
+            else if (event.key === " ") {
+                while (!checkCollision(board, currentPiece)) {
+                    currentPiece.pos.y++;
+                }
+                currentPiece.pos.y--;
+                pieceDrop();
+            } else if (["p", "P"].includes(event.key)) togglePause();
+        });
+
+        function togglePause() {
+            if (!gameStarted || gameOver) return;
+            isPaused = !isPaused;
+            if (isPaused) {
+                messageArea.textContent = "Juego Pausado";
+                pauseButton.textContent = "Reanudar";
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            } else {
+                messageArea.textContent = "";
+                pauseButton.textContent = "Pausar";
+                lastTime = performance.now();
+                dropCounter = 0;
+                if (animationFrameId === null) {
+                    animationFrameId = requestAnimationFrame(gameLoop);
+                }
+            }
+        }
+
+        // — 6.7) Mostrar Menú de Nombre/Edad al iniciar —
+        window.onload = function() {
+            playerInfoMenu.style.display      = 'flex';
+            levelSelectionMenu.style.display  = 'none';
+            gameContainer.style.display       = 'none';
+            controlsDiv.style.display         = 'none';
+            messagesDiv.style.display         = 'block';
+            messageArea.textContent           = "Ingresa tus datos para comenzar";
+        };
+
+        // — 6.8) Botón “Continuar”: oculta el primer menú y muestra el de niveles —
+        continueToLevelSelectButton.addEventListener('click', () => {
+            showLevelSelectionMenu();
+        });
+
+        function showLevelSelectionMenu() {
+            playerInfoMenu.style.display      = 'none';
+            levelSelectionMenu.style.display  = 'flex';
+            gameContainer.style.display       = 'none';
+            controlsDiv.style.display         = 'none';
+            messagesDiv.style.display         = 'block';
+            messageArea.textContent           = "¡Elige un nivel para comenzar!";
+            mainActionButton.textContent      = "Volver al Menú";
+            pauseButton.disabled              = true;
+            populateLevelSelectionMenu();
+        }
+
+        // — 6.9) Generar tarjetas de nivel con sus imágenes respectivas —
+        function populateLevelSelectionMenu() {
+            levelGridContainer.innerHTML = '';
+            LEVEL_ICONS.forEach((icon, index) => {
+                const itemContainer = document.createElement('div');
+                itemContainer.classList.add('level-item-container');
+
+                const card = document.createElement('div');
+                card.classList.add('level-card');
+                card.dataset.level = index + 1;
+
+                const img = document.createElement('img');
+                img.src = icon.imageName;
+                img.alt = icon.name;
+                img.classList.add('level-card-animal-image');
+                card.appendChild(img);
+
+                const numberDisplay = document.createElement('div');
+                numberDisplay.classList.add('level-number-display');
+                numberDisplay.textContent = `Nivel ${index + 1}`;
+
+                itemContainer.appendChild(card);
+                itemContainer.appendChild(numberDisplay);
+
+                card.addEventListener('click', () => {
+                    level = index + 1;
+                    linesCleared = (level - 1) * 10;
+                    board = createBoard(COLS, ROWS);
+                    score = 0;
+                    isPaused = false;
+                    pieceBag.length = 0;
+                    gameOver = false;
+                    updateScore(0);
+                    updateLevel();
+                    resetPiece();
+                    draw();
+                    if (gameOver) {
+                        messageArea.textContent = "¡Juego Terminado! Puntuación: " + score;
+                        mainActionButton.textContent = "Elegir Nivel";
+                        pauseButton.disabled = true;
+                        playSound(gameOverSound, 'C3', '1n');
+                        if (animationFrameId) {
+                            cancelAnimationFrame(animationFrameId);
+                            animationFrameId = null;
+                        }
+                        return;
+                    }
+                    gameStarted = true;
+                    messageArea.textContent = "";
+                    mainActionButton.textContent = "Volver al Menú";
+                    pauseButton.textContent = "Pausar";
+                    pauseButton.disabled = false;
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
+                    lastTime = performance.now();
+                    dropCounter = 0;
+                    animationFrameId = requestAnimationFrame(gameLoop);
+
+                    levelSelectionMenu.style.display = 'none';
+                    gameContainer.style.display = 'flex';
+                    controlsDiv.style.display = 'flex';
+                });
+
+                levelGridContainer.appendChild(itemContainer);
+            });
+        }
+
+        // — 6.10) Botón “Volver al Menú” — regresa al formulario de Nombre/Edad —
+        mainActionButton.addEventListener('click', () => {
+            playerInfoMenu.style.display      = 'flex';
+            levelSelectionMenu.style.display  = 'none';
+            gameContainer.style.display       = 'none';
+            controlsDiv.style.display         = 'none';
+            messagesDiv.style.display         = 'block';
+            messageArea.textContent           = "Ingresa tus datos para comenzar";
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        });
+
+        // — 6.11) Botón “Pausar/Reanudar” —
+        pauseButton.addEventListener('click', togglePause);
+
+        // — 6.12) Botón “Sonido On/Off” —
+        soundButton.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            soundButton.textContent = soundEnabled ? "Sonido On" : "Sonido Off";
+            if (typeof Tone !== 'undefined') {
+                Tone.Destination.mute = !soundEnabled;
+            }
+        });
+    </script>
+</body>
+</html>
